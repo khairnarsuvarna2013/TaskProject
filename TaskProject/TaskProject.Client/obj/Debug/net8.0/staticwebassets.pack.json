@@ -1,0 +1,41 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\Suvarna\\TaskProject\\TaskProject\\TaskProject.Client\\bin\\Debug\\net8.0\\wwwroot\\_framework\\blazor.webassembly.js",
+      "PackagePath": "staticwebassets\\_framework\\blazor.webassembly.js"
+    },
+    {
+      "Id": "D:\\Suvarna\\TaskProject\\TaskProject\\TaskProject.Client\\obj\\Debug\\net8.0\\compressed\\ku8plpomte.gz",
+      "PackagePath": "staticwebassets\\_framework\\blazor.webassembly.js.gz"
+    },
+    {
+      "Id": "D:\\Suvarna\\TaskProject\\TaskProject\\TaskProject.Client\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\TaskProject.Client.bundle.scp.css",
+      "PackagePath": "staticwebassets\\TaskProject.Client.bundle.scp.css"
+    },
+    {
+      "Id": "D:\\Suvarna\\TaskProject\\TaskProject\\TaskProject.Client\\wwwroot\\appsettings.Development.json",
+      "PackagePath": "staticwebassets\\appsettings.Development.json"
+    },
+    {
+      "Id": "D:\\Suvarna\\TaskProject\\TaskProject\\TaskProject.Client\\wwwroot\\appsettings.json",
+      "PackagePath": "staticwebassets\\appsettings.json"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.TaskProject.Client.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.TaskProject.Client.props",
+      "PackagePath": "build\\TaskProject.Client.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.TaskProject.Client.props",
+      "PackagePath": "buildMultiTargeting\\TaskProject.Client.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.TaskProject.Client.props",
+      "PackagePath": "buildTransitive\\TaskProject.Client.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

@@ -1,0 +1,201 @@
+﻿@page "/weather"
+@using Radzen
+@using TaskProject.Client.Models;
+@using System.Net.Http
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NotificationService NotificationService
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates showing data.</p>
+
+<!-- City Dropdown -->
+<RadzenDropDown TValue="int"
+                Data=@cities
+                TextProperty="Name"
+                ValueProperty="Id"
+                Placeholder="Select a city"
+                Change="@(args => OnCityChange(args))" />
+<br />
+
+<!-- Weather Data Grid -->
+@if (weatherReport != null)
+{
+    <RadzenDataGrid @ref="grid" Data="@weatherReport" TItem="WeatherData" Style="margin-top:30px">
+        <Columns>
+            <RadzenDataGridColumn TItem="WeatherData" Property="Condition" Title="Weather Condition" />
+            <RadzenDataGridColumn TItem="WeatherData" Property="Temperature" Title="Temperature (°C)" />
+            <RadzenDataGridColumn TItem="WeatherData" Property="Humidity" Title="Humidity (%)" />
+            <RadzenDataGridColumn TItem="WeatherData" Property="WindSpeed" Title="Wind Speed (m/s)" />
+        </Columns>
+    </RadzenDataGrid>
+    <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" 
+    Style="margin-top:30px ;margin-left:10px" Click="saveData"/>
+
+}
+else if (isLoading)
+{
+    <p>Loading weather data...</p>
+}
+
+@code {
+    private List<City> cities = new List<City>();
+    private int selectedCityId;
+    private List<WeatherData> weatherReport = new List<WeatherData>();
+    private bool isLoading = false;
+    private RadzenDataGrid<WeatherData> grid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCities();
+    }
+
+    private async Task LoadCities()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/cities");
+            if (response.IsSuccessStatusCode)
+            {
+                cities = await response.Content.ReadFromJsonAsync<List<City>>();
+            }
+            else
+            {
+                Console.WriteLine($"Failed to load cities: {response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching cities: {ex.Message}");
+        }
+    } 
+    // Weather data model
+    public class WeatherData
+    {
+        public int CityId { get; set; }
+        public string Condition { get; set; }
+        public double Temperature { get; set; }
+        public int Humidity { get; set; }
+        public double WindSpeed { get; set; }
+        public DateTime CreatedOn { get; set; }
+
+    }
+
+    // Model based on OpenWeatherMap response
+    public class OpenWeatherResponse
+    {
+        public Weather[] weather { get; set; }
+        public Main main { get; set; }
+        public Wind wind { get; set; }
+
+        public class Weather
+        {
+            public string description { get; set; }
+        }
+
+        public class Main
+        {
+            public double temp { get; set; }
+            public int humidity { get; set; }
+        }
+
+        public class Wind
+        {
+            public double speed { get; set; }
+        }
+    }
+
+    // Handle the city change event from the dropdown
+    private async Task OnCityChange(object value)
+    {
+        selectedCityId = (int)value; // Cast the selected value to int (CityId)
+        var selectedCity = cities.FirstOrDefault(c => c.Id == selectedCityId)?.Name;
+
+        if (!string.IsNullOrEmpty(selectedCity))
+        {
+            await FetchWeatherData(selectedCity);
+        }
+    }
+
+    // Fetch weather data based on the selected city
+    private async Task FetchWeatherData(string city)
+    {
+        isLoading = true;
+        string apiKey = "5f7c6d9cd79d4d0e227a0a63d7a37f5b";
+        string url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+
+        var response = await Http.GetFromJsonAsync<OpenWeatherResponse>(url);
+
+        // Clear existing weather data and add new data
+        weatherReport.Clear();
+        weatherReport.Add(new WeatherData
+            {
+                CityId = selectedCityId,
+                Condition = response.weather[0].description,
+                Temperature = response.main.temp,
+                Humidity = response.main.humidity,
+                WindSpeed = response.wind.speed,
+                CreatedOn = DateTime.Now
+            });
+        isLoading = false;
+        await grid.Reload();
+    }
+
+    private async Task saveData()
+    {
+        try
+        {
+            if (weatherReport.Any())
+            {
+                var response = await Http.PostAsJsonAsync("api/weathers", new
+                {
+                    CityId = weatherReport[0].CityId,
+                    Condition = weatherReport[0].Condition,
+                    Temperature = weatherReport[0].Temperature.ToString(),
+                    Humidity = weatherReport[0].Humidity.ToString(),
+                    WindSpeed = weatherReport[0].WindSpeed.ToString(),
+                    CreatedOn = DateTime.Now
+                });
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Weather data saved successfully!");
+                    NotificationService.Notify(new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Success,
+                            Summary = "Success",
+                            Detail = "Weather data saved successfully!"
+                        });
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to save weather data: {response.ReasonPhrase}");
+                    NotificationService.Notify(new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Faild",
+                            Detail = "Failed to save weather data"
+                        });
+                }
+            }
+            else
+            {
+                Console.WriteLine("No weather data available to save.");
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Faild",
+                        Detail = "No weather data available to save."
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving weather data: {ex.Message}");
+        }
+    }
+}
+
