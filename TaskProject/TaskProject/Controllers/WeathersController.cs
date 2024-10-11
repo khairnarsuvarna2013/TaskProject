@@ -76,13 +76,34 @@ namespace TaskProject.Controllers
         // POST: api/Weathers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        //Singel row insert
+        //public async Task<ActionResult<Weather>> PostWeather(Weather weather)
+        //{
+        //    _context.Weather.Add(weather);
+        //    await _context.SaveChangesAsync();
 
-        public async Task<ActionResult<Weather>> PostWeather(Weather weather)
+        //    return CreatedAtAction("GetWeather", new { id = weather.WId }, weather);
+        //}
+
+        //multirow insert
+        public async Task<ActionResult> PostWeatherBatch(List<Weather> weatherList)
         {
-            _context.Weather.Add(weather);
-            await _context.SaveChangesAsync();
+            if (weatherList == null || !weatherList.Any())
+            {
+                return BadRequest("No weather data received.");
+            }
 
-            return CreatedAtAction("GetWeather", new { id = weather.WId }, weather);
+            try
+            {
+                _context.Weather.AddRange(weatherList);
+                await _context.SaveChangesAsync();
+
+                return Ok(); // Return success response
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = $"Error saving data: {ex.Message}" });
+            }
         }
 
         // DELETE: api/Weathers/5

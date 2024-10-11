@@ -20,8 +20,9 @@
                 Placeholder="Select a city"
                 Change="@(args => OnCityChange(args))" />
 <br />
-
-<!-- Weather Data Grid -->
+ @* <RadzenButton Text="Show Current Data" ButtonStyle="ButtonStyle.Primary"
+               Style="margin-top:30px ;margin-left:10px" Click="OnCityChange" />
+ *@<!-- Weather Data Grid -->
 @if (weatherReport != null)
 {
     <RadzenDataGrid @ref="grid" Data="@weatherReport" TItem="WeatherData" Style="margin-top:30px">
@@ -85,28 +86,28 @@ else if (isLoading)
     }
 
     // Model based on OpenWeatherMap response
-    public class OpenWeatherResponse
-    {
-        public Weather[] weather { get; set; }
-        public Main main { get; set; }
-        public Wind wind { get; set; }
+    // public class OpenWeatherResponse
+    // {
+    //     public Weather[] weather { get; set; }
+    //     public Main main { get; set; }
+    //     public Wind wind { get; set; }
 
-        public class Weather
-        {
-            public string description { get; set; }
-        }
+    //     public class Weather
+    //     {
+    //         public string description { get; set; }
+    //     }
 
-        public class Main
-        {
-            public double temp { get; set; }
-            public int humidity { get; set; }
-        }
+    //     public class Main
+    //     {
+    //         public double temp { get; set; }
+    //         public int humidity { get; set; }
+    //     }
 
-        public class Wind
-        {
-            public double speed { get; set; }
-        }
-    }
+    //     public class Wind
+    //     {
+    //         public double speed { get; set; }
+    //     }
+    // }
 
     // Handle the city change event from the dropdown
     private async Task OnCityChange(object value)
@@ -119,27 +120,81 @@ else if (isLoading)
             await FetchWeatherData(selectedCity);
         }
     }
+    public class ForecastResponse
+    {
+        public List<Forecast> list { get; set; }
 
+        public class Forecast
+        {
+            public Main main { get; set; }
+            public Weather[] weather { get; set; }
+            public Wind wind { get; set; }
+            public string dt_txt { get; set; }  // Forecast time (UTC)
+        }
+
+        public class Main
+        {
+            public double temp { get; set; }
+            public int humidity { get; set; }
+        }
+
+        public class Weather
+        {
+            public string description { get; set; }
+        }
+
+        public class Wind
+        {
+            public double speed { get; set; }
+        }
+    }
     // Fetch weather data based on the selected city
     private async Task FetchWeatherData(string city)
     {
         isLoading = true;
         string apiKey = "5f7c6d9cd79d4d0e227a0a63d7a37f5b";
-        string url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+        // string url = $"https:api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+        // var response = await Http.GetFromJsonAsync<OpenWeatherResponse>(url);
+        // weatherReport.Clear();
+        // weatherReport.Add(new WeatherData
+        //     {
+        //         CityId = selectedCityId,
+        //         Condition = response.weather[0].description,
+        //         Temperature = response.main.temp,
+        //         Humidity = response.main.humidity,
+        //         WindSpeed = response.wind.speed,
+        //         CreatedOn = DateTime.Now
+        //     });
 
-        var response = await Http.GetFromJsonAsync<OpenWeatherResponse>(url);
+        string url = $"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={apiKey}&units=metric";
 
-        // Clear existing weather data and add new data
+        var response = await Http.GetFromJsonAsync<ForecastResponse>(url);
+
         weatherReport.Clear();
-        weatherReport.Add(new WeatherData
+
+        // Filter for the times you're interested in (12:00 PM, 3:00 PM, 5:00 PM)
+        var selectedTimes = new[] { "12:00:00", "15:00:00", "17:00:00" };  // 12 PM, 3 PM, 5 PM
+        foreach (var forecast in response.list)
+        {
+            var forecastTime = DateTime.Parse(forecast.dt_txt).ToString("HH:mm:ss");
+            if (selectedTimes.Contains(forecastTime))
             {
-                CityId = selectedCityId,
-                Condition = response.weather[0].description,
-                Temperature = response.main.temp,
-                Humidity = response.main.humidity,
-                WindSpeed = response.wind.speed,
-                CreatedOn = DateTime.Now
-            });
+                weatherReport.Add(new WeatherData
+                    {
+                        CityId = selectedCityId,
+                        Condition = forecast.weather[0].description,
+                        Temperature = forecast.main.temp,
+                        Humidity = forecast.main.humidity,
+                        WindSpeed = forecast.wind.speed,
+                        CreatedOn = DateTime.Parse(forecast.dt_txt)
+                    });
+            }
+            // Stop once we've added three rows
+            if (weatherReport.Count == 3)
+            {
+                break;
+            }
+        }
         isLoading = false;
         await grid.Reload();
     }
@@ -150,16 +205,16 @@ else if (isLoading)
         {
             if (weatherReport.Any())
             {
-                var response = await Http.PostAsJsonAsync("api/weathers", new
+                var dataToSave = weatherReport.Select(weather => new
                 {
-                    CityId = weatherReport[0].CityId,
-                    Condition = weatherReport[0].Condition,
-                    Temperature = weatherReport[0].Temperature.ToString(),
-                    Humidity = weatherReport[0].Humidity.ToString(),
-                    WindSpeed = weatherReport[0].WindSpeed.ToString(),
+                    CityId = weather.CityId,
+                    Condition = weather.Condition,
+                    Temperature = weather.Temperature,
+                    Humidity = weather.Humidity,
+                    WindSpeed = weather.WindSpeed,
                     CreatedOn = DateTime.Now
-                });
-
+                }).ToList();
+                var response = await Http.PostAsJsonAsync("api/Weathers", dataToSave);
                 if (response.IsSuccessStatusCode)
                 {
                     Console.WriteLine("Weather data saved successfully!");
